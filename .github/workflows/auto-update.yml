@@ -1,0 +1,36 @@
+name: 自动抓取更新 CF 优选 IP
+
+on:
+  schedule:
+    # 每天北京时间早上 4:00 自动运行一次 (对应UTC时间 20:00)
+    - cron: '0 20 * * *'
+  # 允许在网页上手动点击按钮立即运行测试
+  workflow_dispatch:
+
+jobs:
+  run-crawler:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: 检出仓库代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Python 环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: 安装网络请求依赖
+        run: pip install requests
+
+      - name: 执行抓取脚本
+        run: python get_cf_ips.py
+
+      - name: 自动提交并推送到仓库
+        run: |
+          git config --global user.name "GitHub Action Bot"
+          git config --global user.email "action@github.com"
+          git add telecom.txt mobile.txt unicom.txt
+          git diff --quiet && git diff --staged --quiet || (git commit -m "🤖 自动更新优选 IP 列表 [skip ci]" && git push)
